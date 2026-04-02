@@ -6,16 +6,17 @@
 
 /**
  * Generate the Context Routing file content.
- * @param {string} prefix      - Project prefix, e.g. "LC247"
+ * @param {string} prefix       - Project prefix, e.g. "LC247"
  * @param {'global'|'module'} setupMode - Setup mode
- * @param {string} [moduleName] - Module name (required for module mode), e.g. "Payment"
+ * @param {string} [moduleName]  - Module name (required for module mode), e.g. "Payment"
+ * @param {string[]} [moduleDeps] - Module dependencies (for module mode), e.g. ["Auth", "Core"]
  * @returns {string} Complete Markdown content
  */
-export function getRoutingTemplate(prefix, setupMode, moduleName) {
+export function getRoutingTemplate(prefix, setupMode, moduleName, moduleDeps = []) {
     if (setupMode === 'global') {
         return getGlobalRouting(prefix);
     }
-    return getModuleRouting(prefix, moduleName);
+    return getModuleRouting(prefix, moduleName, moduleDeps);
 }
 
 // ─── Global Mode Routing ─────────────────────────────────────────────────────
@@ -87,8 +88,14 @@ When analyzing the full system architecture, compose the view by:
 
 // ─── Module Mode Routing ─────────────────────────────────────────────────────
 
-function getModuleRouting(prefix, moduleName) {
+function getModuleRouting(prefix, moduleName, moduleDeps = []) {
     const moduleTag = `Module-${moduleName}`;
+    const depsRows = moduleDeps.map(d =>
+        `| \`[Module-${d}]\` | 🟡 READ | Dependency — interfaces and contracts only. |`
+    ).join('\n');
+    const depsQueryRows = moduleDeps.map((d, i) =>
+        `| ${6 + i} | \`[Module-${d}] Convention\` | Dependency module conventions (READ-ONLY). |`
+    ).join('\n');
 
     return `---
 name: ${prefix.toLowerCase()}-context-routing
@@ -113,13 +120,13 @@ description: Context Router for ${prefix} project — Module [${moduleName}].
 | \`[Global-Convention]\` | 🟢 READ | System-wide coding standards, architecture rules. |
 | \`[Global-ADR]\` | 🟢 READ | Architecture Decision Records (system-level). |
 | \`[Global-Troubleshooting]\` | 🟢 READ | System-wide incident reports, post-mortems. |
-| \`[${moduleTag}]\` | 🟢 READ/WRITE | Your module's conventions, ADRs, troubleshooting. |
+| \`[${moduleTag}]\` | 🟢 READ/WRITE | Your module's conventions, ADRs, troubleshooting. |${depsRows ? `\n${depsRows}` : ''}
 
 ### ❌ Forbidden Prefixes
 
 | Pattern | Reason |
 |---------|--------|
-| \`[Module-*]\` (other modules) | **Context Overload Prevention** — reading other modules' files causes hallucination and cross-contamination. |
+| \`[Module-*]\` (other modules) | **Context Overload Prevention** — reading other modules' files causes hallucination and cross-contamination. |${moduleDeps.length > 0 ? `\n\n> **Exception:** Dependencies listed above (${moduleDeps.map(d => `\`[Module-${d}]\``).join(', ')}) are allowed as READ-ONLY.` : ''}
 
 > **CRITICAL:** If a task requires knowledge from another module, you MUST escalate to the
 > Master Architect or the other Module Owner. **NEVER read their files directly.**
@@ -149,7 +156,7 @@ When fetching context from NotebookLM MCP, follow this priority:
 | 2 | \`[${moduleTag}] Convention\` | Module-specific coding standards. |
 | 3 | \`[${moduleTag}] ADR\` | Past architecture decisions for this module. |
 | 4 | \`[${moduleTag}] Troubleshooting\` | Known bugs and fixes in this module. |
-| 5 | \`[${moduleTag}] Feature-Logic\` | Complex business rules specific to this module. |
+| 5 | \`[${moduleTag}] Feature-Logic\` | Complex business rules specific to this module. |${depsQueryRows ? `\n${depsQueryRows}` : ''}
 
 ---
 

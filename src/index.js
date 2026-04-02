@@ -20,6 +20,7 @@ import { getAiIgnore } from './templates/aiignore.js';
 import { getAgentRules, getAgentRulesFilename } from './templates/agentrules.js';
 import { getWorkflowTemplate } from './templates/workflow.js';
 import { getRoutingTemplate } from './templates/routing.js';
+import { detectDependencies } from './utils/detect-deps.js';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 const ANTIGRAVITY_DIR = '.antigravity';
@@ -132,13 +133,49 @@ export async function run() {
         transformer: (val) => val.toUpperCase(),
     });
 
-    // 1f. Agent Target
+    // 1f. Module Dependencies (only for module mode)
+    let moduleDeps = [];
+    if (isModule) {
+        // Auto-detect from project config
+        const detected = detectDependencies(cwd, framework);
+        if (detected.length > 0) {
+            console.log('');
+            console.log(chalk.cyan('  📦 Auto-detected local dependencies:'));
+            detected.forEach(d => console.log(chalk.dim(`     • ${d.package} → [Module-${d.name}]`)));
+            console.log('');
+
+            const useDetected = await confirm({
+                message: 'Use these as module dependencies (READ-ONLY access)?',
+                default: true,
+            });
+
+            if (useDetected) {
+                moduleDeps = detected.map(d => d.name);
+            }
+        }
+
+        // Manual input (add more or enter from scratch)
+        const manualDeps = await input({
+            message: `Additional module dependencies? (comma-separated, e.g. Auth,Core — or leave empty):`,
+            default: '',
+        });
+
+        if (manualDeps.trim()) {
+            const manual = manualDeps.split(',').map(d => {
+                const t = d.trim();
+                return t.charAt(0).toUpperCase() + t.slice(1);
+            }).filter(d => d.length > 0 && d !== moduleName);
+            moduleDeps = [...new Set([...moduleDeps, ...manual])];
+        }
+    }
+
+    // 1g. Agent Target
     const agentTarget = await select({
         message: 'Select your AI agent:',
         choices: AGENT_TARGETS,
     });
 
-    // 1g. Overwrite
+    // 1h. Overwrite
     const overwrite = await confirm({
         message: 'Overwrite existing files if they exist?',
         default: false,
@@ -151,6 +188,9 @@ export async function run() {
     console.log(`    Setup Mode   : ${chalk.cyan(isModule ? `Module [${moduleName}]` : 'Global (Master Architect)')}`);
     if (isModule) {
         console.log(`    Module Name  : ${chalk.cyan(moduleName)}`);
+        if (moduleDeps.length > 0) {
+            console.log(`    Dependencies : ${chalk.cyan(moduleDeps.map(d => `[Module-${d}]`).join(', '))} ${chalk.dim('(READ-ONLY)')}`);
+        }
     }
     console.log(`    Framework    : ${chalk.cyan(framework)}`);
     console.log(`    PREFIX       : ${chalk.cyan(prefix)}`);
@@ -179,12 +219,12 @@ export async function run() {
     // 2b. .agentrules / .cursorrules
     const rulesFilename = getAgentRulesFilename(agentTarget);
     const rulesPath = join(cwd, rulesFilename);
-    safeWrite(rulesPath, getAgentRules(prefix, agentTarget, setupMode, moduleName), overwrite);
+    safeWrite(rulesPath, getAgentRules(prefix, agentTarget, setupMode, moduleName, moduleDeps), overwrite);
 
     // 2c. If target is "both", also generate .cursorrules
     if (agentTarget === 'both') {
         const cursorPath = join(cwd, '.cursorrules');
-        safeWrite(cursorPath, getAgentRules(prefix, 'cursor', setupMode, moduleName), overwrite);
+        safeWrite(cursorPath, getAgentRules(prefix, 'cursor', setupMode, moduleName, moduleDeps), overwrite);
     }
 
     // 2d. .antigravity/ directory
@@ -199,12 +239,12 @@ export async function run() {
     // 2e. Constitution file: 00_[PREFIX]_Agent_Workflow.md
     const workflowFilename = `00_${prefix}_Agent_Workflow.md`;
     const workflowPath = join(antigravDir, workflowFilename);
-    safeWrite(workflowPath, getWorkflowTemplate(prefix, jiraKey.toUpperCase(), setupMode, moduleName), overwrite);
+    safeWrite(workflowPath, getWorkflowTemplate(prefix, jiraKey.toUpperCase(), setupMode, moduleName, moduleDeps), overwrite);
 
     // 2f. Context Router: 00_Core_Routing.md
     const routingFilename = '00_Core_Routing.md';
     const routingPath = join(antigravDir, routingFilename);
-    safeWrite(routingPath, getRoutingTemplate(prefix, setupMode, moduleName), overwrite);
+    safeWrite(routingPath, getRoutingTemplate(prefix, setupMode, moduleName, moduleDeps), overwrite);
 
     // ── Step 3: Success Banner ──
     header('Step 3 — Done! 🎉');

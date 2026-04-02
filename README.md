@@ -94,7 +94,15 @@ payment-service/
 Your AI agent can only read:
 - ✅ `[Global-Convention]` files — system-wide rules (from the Main Project)
 - ✅ `[Module-Payment]` files — your own module's docs
-- ❌ Other modules' files — **blocked** to prevent confusion and hallucination
+- ✅ `[Module-Auth]`, `[Module-Core]` — declared dependencies (READ-ONLY)
+- ❌ Other modules' files — blocked to prevent confusion and hallucination
+
+**How dependencies work:**
+If your module imports/uses other sub-packages (e.g. Payment uses Auth for token verification), declare them as dependencies. The CLI:
+- **Flutter projects**: auto-detects from `pubspec.yaml` path dependencies
+- **Other frameworks**: asks you to enter them manually
+
+Dependency modules are added as **READ-ONLY** — your agent can read their docs to understand interfaces, but cannot modify their knowledge files.
 
 **Your responsibilities:**
 - Write `[Module-Payment]` files (your module's conventions, ADRs, troubleshooting)
@@ -159,6 +167,14 @@ The agent also supports slash commands: `/pause`, `/resume`, `/handover`.
 
 - Node.js ≥ 18
 - An AI agent with MCP support (Jira, Confluence, NotebookLM)
+
+## Version History
+
+| Version | Changes |
+|---------|--------|
+| 1.2.0 | Module Dependencies — auto-detect from pubspec.yaml, READ-ONLY access |
+| 1.1.0 | Multi-Repo: Global/Module modes, Context Isolation, Lego Architecture |
+| 1.0.0 | Initial release — 4-Round Wizard, Context Manifest, Sub-Agents |
 
 ## License
 

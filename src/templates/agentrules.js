@@ -13,9 +13,10 @@
  * @param {string} target       - Agent target: "antigravity" | "cursor" | "both"
  * @param {'global'|'module'} setupMode - Setup mode
  * @param {string} [moduleName] - Module name (for module mode), e.g. "Payment"
+ * @param {string[]} [moduleDeps] - Module dependencies, e.g. ["Auth", "Core"]
  * @returns {string} Full agent rules file content
  */
-export function getAgentRules(prefix, target, setupMode = 'global', moduleName = '') {
+export function getAgentRules(prefix, target, setupMode = 'global', moduleName = '', moduleDeps = []) {
     const agentName = {
         antigravity: 'Antigravity (Gemini)',
         cursor: 'Cursor',
@@ -30,7 +31,7 @@ export function getAgentRules(prefix, target, setupMode = 'global', moduleName =
         : `You are ${agentName}, an autonomous AI agent operating as the **Master Architect** of the ${prefix} project ecosystem.`;
 
     const contextIsolation = isModule
-        ? getModuleIsolation(moduleTag)
+        ? getModuleIsolation(moduleTag, moduleDeps)
         : getGlobalIsolation();
 
     return `# ═══════════════════════════════════════════════════════════════════════════════
@@ -94,17 +95,21 @@ function getGlobalIsolation() {
 - ✅ **[Module-*]** — All module-specific files (READ for oversight)`;
 }
 
-function getModuleIsolation(moduleTag) {
+function getModuleIsolation(moduleTag, moduleDeps = []) {
+    const depsSection = moduleDeps.length > 0
+        ? moduleDeps.map(d => `- **[Module-${d}]** — Dependency (READ-ONLY — interfaces and contracts only)`).join('\n')
+        : '';
+
     return `You are operating under **Context Isolation**. Strict scoping rules apply:
 
 ### ✅ Allowed
 - **[Global-Convention]** — System-wide coding standards (READ)
 - **[Global-ADR]** — System-wide architecture decisions (READ)
 - **[Global-Troubleshooting]** — System-wide post-mortems (READ)
-- **[${moduleTag}]** — Your module's files (READ/WRITE)
+- **[${moduleTag}]** — Your module's files (READ/WRITE)${depsSection ? `\n${depsSection}` : ''}
 
 ### ❌ Forbidden
-- **[Module-*]** (other modules) — NEVER read other module files.
+- **[Module-*]** (other modules) — NEVER read other module files.${moduleDeps.length > 0 ? `\n  → Exception: ${moduleDeps.map(d => `[Module-${d}]`).join(', ')} allowed as READ-ONLY (listed above).` : ''}
   → Risk: Context overload, hallucination, cross-contamination.
   → Action: Escalate to the Master Architect if cross-module knowledge is needed.`;
 }

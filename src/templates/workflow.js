@@ -14,9 +14,10 @@
  * @param {string} jiraKey      - Jira project key, e.g. "LC" (defaults to prefix)
  * @param {'global'|'module'} setupMode - Setup mode
  * @param {string} [moduleName] - Module name (for module mode), e.g. "Payment"
+ * @param {string[]} [moduleDeps] - Module dependencies, e.g. ["Auth", "Core"]
  * @returns {string} Complete Markdown content
  */
-export function getWorkflowTemplate(prefix, jiraKey, setupMode = 'global', moduleName = '') {
+export function getWorkflowTemplate(prefix, jiraKey, setupMode = 'global', moduleName = '', moduleDeps = []) {
   const key = jiraKey || prefix;
   const isModule = setupMode === 'module';
   const moduleTag = isModule ? `Module-${moduleName}` : '';
@@ -27,7 +28,7 @@ export function getWorkflowTemplate(prefix, jiraKey, setupMode = 'global', modul
     : `You are an autonomous AI agent operating as the **Master Architect** of the **${prefix}** project ecosystem.`;
 
   const contextRulesSection = isModule
-    ? getModuleContextRules(moduleTag)
+    ? getModuleContextRules(moduleTag, moduleDeps)
     : getGlobalContextRules();
 
   const legoSection = isModule
@@ -326,7 +327,11 @@ function getGlobalContextRules() {
 
 // ─── Helper: Module Context Rules ────────────────────────────────────────────
 
-function getModuleContextRules(moduleTag) {
+function getModuleContextRules(moduleTag, moduleDeps = []) {
+  const depsRows = moduleDeps.map((d, i) =>
+    `| ${5 + i}        | \\\`[Module-${d}]\\\`${' '.repeat(Math.max(0, 20 - d.length))}| Dependency — READ-ONLY (interfaces and contracts).     |`
+  ).join('\n');
+
   return `When retrieving context from NotebookLM, the Agent MUST follow **Context Isolation** rules:
 
 ### ✅ Allowed Prefixes
@@ -336,15 +341,15 @@ function getModuleContextRules(moduleTag) {
 | 1        | \\\`[Global-Convention]\\\`      | System-wide coding standards (MANDATORY compliance).    |
 | 2        | \\\`[Global-ADR]\\\`             | System-wide architecture decisions.                     |
 | 3        | \\\`[Global-Troubleshooting]\\\` | System-wide post-mortems and fixes.                     |
-| 4        | \\\`[${moduleTag}]\\\`           | Your module's conventions, ADRs, troubleshooting, feature logic. |
+| 4        | \\\`[${moduleTag}]\\\`           | Your module's conventions, ADRs, troubleshooting, feature logic. |${depsRows ? `\n${depsRows}` : ''}
 
 ### ❌ Forbidden Prefixes
 
 | Pattern              | Reason                                                  |
 |----------------------|---------------------------------------------------------|
-| \\\`[Module-*]\\\` (others) | Context Overload Prevention — causes hallucination.     |
+| \\\`[Module-*]\\\` (others) | Context Overload Prevention — causes hallucination.     |${moduleDeps.length > 0 ? `\n\n> **Exception:** Dependencies (${moduleDeps.map(d => `\\\`[Module-${d}]\\\``).join(', ')}) are allowed as READ-ONLY.` : ''}
 
-> **CRITICAL:** If a task requires knowledge from another module, escalate to the Master Architect. NEVER read other module files.`;
+> **CRITICAL:** If a task requires knowledge from another module not listed above, escalate to the Master Architect. NEVER read other module files.`;
 }
 
 // ─── Helper: Global Lego Architecture ────────────────────────────────────────

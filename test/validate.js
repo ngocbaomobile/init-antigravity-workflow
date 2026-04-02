@@ -50,13 +50,16 @@ assert('Global: contains /pause, /resume, /handover', globalRules.includes('/pau
 
 // ── .agentrules (Module Mode) ──
 console.log('\n📄 .agentrules (Module Mode):');
-const moduleRules = getAgentRules('MYAPP', 'antigravity', 'module', 'Payment');
+const moduleRules = getAgentRules('MYAPP', 'antigravity', 'module', 'Payment', ['Auth', 'Core']);
 assert('Module: contains PREFIX "MYAPP"', moduleRules.includes('MYAPP'));
 assert('Module: contains Module-Payment scope', moduleRules.includes('Module-Payment'));
 assert('Module: contains Context Isolation', moduleRules.includes('Context Isolation'));
 assert('Module: contains Forbidden section', moduleRules.includes('Forbidden'));
 assert('Module: contains escalation warning', moduleRules.includes('Escalate') || moduleRules.includes('escalate'));
 assert('Module: does NOT say Master Architect role', !moduleRules.includes('operating as the **Master Architect**'));
+assert('Module: contains dependency Auth (READ-ONLY)', moduleRules.includes('[Module-Auth]') && moduleRules.includes('READ-ONLY'));
+assert('Module: contains dependency Core (READ-ONLY)', moduleRules.includes('[Module-Core]'));
+assert('Module: contains exception note for deps', moduleRules.includes('Exception'));
 
 assert('Filename for antigravity = .agentrules', getAgentRulesFilename('antigravity') === '.agentrules');
 assert('Filename for cursor = .cursorrules', getAgentRulesFilename('cursor') === '.cursorrules');
@@ -79,7 +82,7 @@ assert('Global WF: references Context Router', wfGlobal.includes('00_Core_Routin
 
 // ── Workflow template (Module Mode) ──
 console.log('\n📄 Workflow (Module Mode):');
-const wfModule = getWorkflowTemplate('LC247', 'LC', 'module', 'Payment');
+const wfModule = getWorkflowTemplate('LC247', 'LC', 'module', 'Payment', ['Auth']);
 assert('Module WF: contains Module-Payment scope', wfModule.includes('Module-Payment'));
 assert('Module WF: contains Context Isolation', wfModule.includes('Context Isolation'));
 assert('Module WF: contains Forbidden prefixes', wfModule.includes('Forbidden'));
@@ -87,6 +90,7 @@ assert('Module WF: contains knowledge_layer module', wfModule.includes('knowledg
 assert('Module WF: contains Lego Architecture', wfModule.includes('Lego Architecture'));
 assert('Module WF: NEVER fetch from other modules warning', wfModule.includes('NEVER'));
 assert('Module WF: does NOT use Master Architect role', !wfModule.includes('operating as the **Master Architect**'));
+assert('Module WF: contains dependency Auth in context rules', wfModule.includes('Module-Auth'));
 
 // ── Routing template (Global Mode) ──
 console.log('\n📄 Routing (Global Mode):');
@@ -98,12 +102,15 @@ assert('Global Route: contains Lego diagram', routeGlobal.includes('Module A'));
 
 // ── Routing template (Module Mode) ──
 console.log('\n📄 Routing (Module Mode):');
-const routeModule = getRoutingTemplate('LC247', 'module', 'Payment');
+const routeModule = getRoutingTemplate('LC247', 'module', 'Payment', ['Auth', 'Core']);
 assert('Module Route: contains Module-Payment', routeModule.includes('Module-Payment'));
 assert('Module Route: contains Module Owner role', routeModule.includes('Module Owner'));
 assert('Module Route: contains Forbidden section', routeModule.includes('Forbidden'));
 assert('Module Route: contains context overload warning', routeModule.includes('Context Overload'));
 assert('Module Route: contains NotebookLM query strategy', routeModule.includes('Query Strategy'));
+assert('Module Route: contains dep Auth as READ', routeModule.includes('Module-Auth'));
+assert('Module Route: contains dep Core as READ', routeModule.includes('Module-Core'));
+assert('Module Route: contains dependency exception note', routeModule.includes('Exception'));
 
 // ── Cross-mode isolation check ──
 console.log('\n📄 Cross-mode Isolation Checks:');
