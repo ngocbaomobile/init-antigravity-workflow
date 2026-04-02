@@ -21,6 +21,7 @@ import { getAgentRules, getAgentRulesFilename } from './templates/agentrules.js'
 import { getWorkflowTemplate } from './templates/workflow.js';
 import { getRoutingTemplate } from './templates/routing.js';
 import { detectDependencies } from './utils/detect-deps.js';
+import { detectFramework } from './utils/detect-framework.js';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 const ANTIGRAVITY_DIR = '.antigravity';
@@ -109,11 +110,35 @@ export async function run() {
         moduleName = trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
     }
 
-    // 1c. Framework
-    const framework = await select({
-        message: 'Select your project framework:',
-        choices: FRAMEWORKS,
-    });
+    // 1c. Framework (auto-detect or manual)
+    let framework;
+    const detected = detectFramework(cwd);
+    if (detected) {
+        const frameworkLabel = FRAMEWORKS.find(f => f.value === detected.framework)?.name || detected.framework;
+        console.log('');
+        console.log(chalk.cyan(`  🔍 Auto-detected: ${frameworkLabel}`));
+        console.log(chalk.dim(`     ${detected.reason}`));
+        console.log('');
+
+        const useDetected = await confirm({
+            message: `Use ${frameworkLabel} as your framework?`,
+            default: true,
+        });
+
+        if (useDetected) {
+            framework = detected.framework;
+        } else {
+            framework = await select({
+                message: 'Select your project framework:',
+                choices: FRAMEWORKS,
+            });
+        }
+    } else {
+        framework = await select({
+            message: 'Select your project framework:',
+            choices: FRAMEWORKS,
+        });
+    }
 
     // 1d. Project PREFIX
     const rawPrefix = await input({
