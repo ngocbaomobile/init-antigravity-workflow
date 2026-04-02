@@ -14,6 +14,12 @@ The CLI will guide you through the setup. Just answer the prompts.
 
 ---
 
+## Architecture Overview
+
+![Workflow Overview](docs/workflow-overview.png)
+
+---
+
 ## Who Are You?
 
 This tool supports **two roles**. Pick the one that matches your situation:
