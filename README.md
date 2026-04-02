@@ -1,144 +1,164 @@
 # 🚀 init-antigravity-workflow
 
-> Universal AI Workflow Bootstrapper — Scaffold the **4-Round Interactive Wizard** for any project with Jira, Confluence & NotebookLM MCP integration.
-> 
-> Supports **Multi-Repo Architecture**: Centralized Knowledge (NotebookLM), Decentralized Execution (IDE/Local Repo).
-
-## What It Does
-
-Running this CLI tool in your project root generates:
-
-| File | Purpose |
-|------|---------|
-| `.aiignore` | Framework-specific ignore patterns (like .gitignore but for AI agents) |
-| `.agentrules` / `.cursorrules` | Forces the AI agent to read the Constitution before any task |
-| `.antigravity/00_[PREFIX]_Agent_Workflow.md` | The "Constitution" — 4-Round Wizard, Context Manifest, Sub-Agents |
-| `.antigravity/00_Core_Routing.md` | Context Router — controls which NotebookLM files the agent can access |
+> Scaffold an AI Workflow for your project — with Jira, Confluence & NotebookLM MCP integration.
+>
+> Supports **Multi-Repo**: one shared knowledge base, each repo runs its own AI agent.
 
 ## Quick Start
-
-### Option 1: npx (no install)
 
 ```bash
 npx init-antigravity-workflow
 ```
 
-### Option 2: Global install
+The CLI will guide you through the setup. Just answer the prompts.
+
+---
+
+## Who Are You?
+
+This tool supports **two roles**. Pick the one that matches your situation:
+
+---
+
+### 🏗️ I'm setting up the **Main Project**
+
+> **You are the Lead / Architect.** You define system-wide rules that all teams must follow.
+
+**When to pick this:** You're the one creating the **central repository** or the **master standards** for the project (architecture rules, coding conventions, git flow, etc.).
+
+**What to do:**
 
 ```bash
-npm install -g init-antigravity-workflow
-init-antigravity-workflow
+# 1. Go to your main project root
+cd ~/projects/my-main-project
+
+# 2. Run the CLI
+npx init-antigravity-workflow
+
+# 3. Select: Global (Master Architect)
+# 4. Answer the remaining prompts (framework, prefix, Jira key, agent)
 ```
 
-### Option 3: Clone & run locally
+**What you get:**
+
+```
+my-main-project/
+├── .aiignore                                    # AI agent ignore patterns
+├── .agentrules                                  # Pre-flight rules for AI agent
+└── .antigravity/
+    ├── 00_MYAPP_Agent_Workflow.md                # "Constitution" — 4-Round Wizard
+    └── 00_Core_Routing.md                        # Full access to all knowledge files
+```
+
+**Your responsibilities:**
+- Write `[Global-Convention]` files (architecture rules, coding standards, git flow)
+- Upload them to the **shared NotebookLM workspace**
+- All module teams will inherit your rules automatically
+
+**Next step after setup:** The CLI will print a prompt — paste it into your AI agent to auto-generate a Master Architecture Map, then upload it to NotebookLM as `[Global-Convention] Master_Architecture.md`.
+
+---
+
+### 📦 I'm setting up a **Sub-Module**
+
+> **You are a Module Owner / Team Lead.** You own one specific part of the system (e.g. Payment, Auth, Booking).
+
+**When to pick this:** You're setting up a **sub-package / microservice / feature repo** that should follow the global rules but also has its own conventions.
+
+**What to do:**
 
 ```bash
-git clone https://github.com/your-org/init-antigravity-workflow.git
-cd init-antigravity-workflow
-npm install
-node bin/cli.js
+# 1. Go to your module repo root
+cd ~/projects/payment-service
+
+# 2. Run the CLI
+npx init-antigravity-workflow
+
+# 3. Select: Module (Module Owner)
+# 4. Enter your module name: Payment
+# 5. Answer the remaining prompts (framework, prefix, Jira key, agent)
 ```
 
-## Multi-Repo Architecture
-
-This tool supports the **"Centralized Knowledge, Decentralized Execution"** pattern for enterprise multi-repo projects.
-
-### Setup Modes
-
-| Mode | Role | Description |
-|------|------|-------------|
-| **Global** | Master Architect | Full knowledge access. Defines system-wide `[Global-Convention]` rules. |
-| **Module** | Module Owner | Scoped to `[Global-Convention]` + own `[Module-Name]` files only. |
-
-### How It Works
+**What you get:**
 
 ```
-┌─────────────────────────────────────────────┐
-│          NotebookLM (Single Source)          │
-│                                             │
-│  [Global-Convention] Master_Architecture    │
-│  [Global-Convention] Clean_Architecture     │
-│  [Global-ADR] ADR-001_State_Management     │
-│  [Module-Payment] Convention_...            │
-│  [Module-Auth] ADR-001_...                  │
-│  [Module-Booking] Troubleshooting_...       │
-├──────────┬──────────┬──────────┬────────────┤
-│ Repo A   │ Repo B   │ Repo C   │ Repo ...   │
-│ (Global) │ (Module) │ (Module) │ (Module)   │
-│ Full     │ Scoped   │ Scoped   │ Scoped     │
-│ Access   │ Access   │ Access   │ Access     │
-└──────────┴──────────┴──────────┴────────────┘
+payment-service/
+├── .aiignore                                    # AI agent ignore patterns
+├── .agentrules                                  # Pre-flight rules (scoped to your module)
+└── .antigravity/
+    ├── 00_MYAPP_Agent_Workflow.md                # "Constitution" — scoped 4-Round Wizard
+    └── 00_Core_Routing.md                        # ⚠️ Restricted: Global + your module ONLY
 ```
 
-### Key Principles
+**Key difference — Context Isolation:**
+Your AI agent can only read:
+- ✅ `[Global-Convention]` files — system-wide rules (from the Main Project)
+- ✅ `[Module-Payment]` files — your own module's docs
+- ❌ Other modules' files — **blocked** to prevent confusion and hallucination
 
-1. **Centralized Knowledge** — One NotebookLM workspace for the entire project
-2. **Decentralized Execution** — Each repo operates independently with its own agent
-3. **Context Isolation** — Module agents can ONLY read Global + their own module files
-4. **Lego Architecture** — Agent auto-joins `[Global] Master Architecture` + `[Module] Architecture Map`
+**Your responsibilities:**
+- Write `[Module-Payment]` files (your module's conventions, ADRs, troubleshooting)
+- Upload them to the **same shared NotebookLM workspace** everyone uses
+- Your AI agent automatically sees Global rules + your module docs only
 
-## Interactive Prompts
+**Next step after setup:** The CLI will print a prompt — paste it into your AI agent to auto-generate a Module Architecture Map, then upload it to NotebookLM as `[Module-Payment] Architecture_Map.md`.
 
-The CLI asks these questions:
+---
 
-1. **Setup Mode** — Global (Master Architect) or Module (Module Owner)
-2. **Module Name** — *(Module mode only)* e.g. `Payment`, `Auth`, `Booking`
-3. **Framework** — Flutter, Laravel, React, Node.js, Python, or Other
-4. **PREFIX** — Your project code (e.g. `LC247`, `MYAPP`), auto-uppercased
-5. **Jira Key** — Jira project prefix for ticket IDs (defaults to PREFIX)
-6. **Agent Target** — Antigravity (Gemini), Cursor, or Both
+## How Multi-Repo Knowledge Works
 
-## Generated Files
+Everyone uses **one shared NotebookLM workspace**. Files are organized by prefix:
 
-### `.aiignore`
-Prevents AI agents from indexing build artifacts, dependencies, and generated files. Patterns are tailored to your chosen framework.
+```
+NotebookLM (shared workspace)
+│
+├── [Global-Convention] Master_Architecture.md       ← Main Project writes these
+├── [Global-Convention] Clean_Architecture_Rules.md   ← Everyone must follow
+├── [Global-ADR] ADR-001_State_Management.md          ← System-wide decisions
+│
+├── [Module-Payment] Convention_API_Design.md         ← Payment team writes these
+├── [Module-Payment] ADR-001_Gateway_Choice.md        ← Only Payment team reads
+│
+├── [Module-Auth] Convention_JWT_Flow.md               ← Auth team writes these
+├── [Module-Auth] Troubleshooting_Token_Expiry.md     ← Only Auth team reads
+│
+└── [Module-Booking] ...                               ← Booking team writes these
+```
 
-### `.agentrules` / `.cursorrules`
-Contains mandatory pre-flight instructions that force the AI agent to:
-- Read the Constitution file before ANY task
-- Read the Context Router for scope rules
-- Check `execution_status` on Jira when resuming
-- Follow the 4-Round Wizard protocol
-- Respond to `/pause`, `/resume`, `/handover` commands
+**The rule:** Each module agent reads Global + its own prefix. No cross-reading.
 
-### `.antigravity/00_[PREFIX]_Agent_Workflow.md`
-The complete "Constitution" file containing:
+---
 
-| Part | Content |
-|------|---------|
-| Part 1 | Context Ingestion & Categorization Rules (mode-aware) |
-| Part 1.5 | Lego Architecture — Join Strategy |
-| Part 2 | 4-Round Interactive Wizard (with decision tree) |
-| Part 3 | Context Manifest v2.0 (YAML template with knowledge layer) |
-| Part 4 | Execution Status Tracking + Session Resume Protocol |
-| Part 5 | Sub-Agent Interview Modes (`/pause`, `/resume`, `/handover`) |
+## What the AI Agent Does (4-Round Wizard)
 
-### `.antigravity/00_Core_Routing.md`
-The Context Router file that defines:
-- Which NotebookLM file prefixes the agent is allowed to access
-- File naming conventions for the knowledge base
-- Query strategy and priority ordering
-- Lego Architecture join diagram
+After setup, your AI agent follows a strict 4-round process for every task:
 
-## After Setup
+| Round | What Happens |
+|-------|-------------|
+| **0** | No Jira ticket? Agent interviews you and creates one automatically. |
+| **1** | Agent gathers context from Jira, Confluence, NotebookLM → builds a Context Manifest. |
+| **2** | Agent generates an Execution Plan from the manifest → you approve it. |
+| **3** | Agent writes code, runs linters, updates Jira, and optionally writes knowledge back to NotebookLM. |
 
-The CLI prints a **sample prompt** — copy and paste it into your AI agent's chat to auto-generate:
-- **Global mode**: `[PREFIX]_Master_Architecture.md`
-- **Module mode**: `[Module-Name]_Architecture_Map.md`
+The agent also supports slash commands: `/pause`, `/resume`, `/handover`.
 
-Then upload to NotebookLM with the appropriate prefix.
+---
+
+## Generated Files Explained
+
+| File | What it does |
+|------|-------------|
+| `.aiignore` | Like `.gitignore` but for AI agents — hides build artifacts, `node_modules`, etc. |
+| `.agentrules` | Forces the AI to read the Constitution + Routing before doing anything. |
+| `00_[PREFIX]_Agent_Workflow.md` | The full "Constitution" — 4-Round Wizard, Context Manifest template, status tracking, sub-agents. |
+| `00_Core_Routing.md` | Controls which NotebookLM files the AI can access (full access for Global, scoped for Module). |
+
+---
 
 ## Requirements
 
 - Node.js ≥ 18
 - An AI agent with MCP support (Jira, Confluence, NotebookLM)
-
-## Publishing to npm
-
-```bash
-npm login
-npm publish
-```
 
 ## License
 
