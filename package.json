@@ -1,6 +1,6 @@
 {
     "name": "init-antigravity-workflow",
-    "version": "1.3.2",
+    "version": "1.3.3",
     "description": "Universal AI Workflow Bootstrapper — Scaffold the 4-Round Interactive Wizard for any project with Jira, Confluence & NotebookLM MCP integration.",
     "type": "module",
     "main": "src/index.js",
