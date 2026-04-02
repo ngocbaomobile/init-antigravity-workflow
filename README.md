@@ -61,6 +61,9 @@ my-main-project/
 - Upload them to the **shared NotebookLM workspace**
 - All module teams will inherit your rules automatically
 
+> **💡 Important Note for Master Architects:**
+> As the Master Architect, beyond generating the Architecture Map, you should also create supplementary convention files (e.g., `[Global-Convention] Clean_Architecture_Rules.md` or `[Global-Convention] UI_Theme_Standards.md`) and upload them to NotebookLM. This establishes the complete "Global Knowledge Pool" that all subsequent tasks and module agents will rely on for automated execution.
+
 **Next step after setup:** The CLI will print a prompt — paste it into your AI agent to auto-generate a Master Architecture Map, then upload it to NotebookLM as `[Global-Convention] Master_Architecture.md`.
 
 ---
@@ -178,6 +181,7 @@ The agent also supports slash commands: `/pause`, `/resume`, `/handover`.
 
 | Version | Changes |
 |---------|--------|
+| 1.3.3 | Add Important Note for Master Architects about convention files |
 | 1.2.0 | Module Dependencies — auto-detect from pubspec.yaml, READ-ONLY access |
 | 1.1.0 | Multi-Repo: Global/Module modes, Context Isolation, Lego Architecture |
 | 1.0.0 | Initial release — 4-Round Wizard, Context Manifest, Sub-Agents |

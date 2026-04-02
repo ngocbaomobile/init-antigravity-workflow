@@ -81,7 +81,7 @@ export async function run() {
     // ── Banner ──
     console.log('');
     console.log(chalk.bgCyan.black.bold('                                                   '));
-    console.log(chalk.bgCyan.black.bold('   🚀  init-antigravity-workflow  v1.1.0            '));
+    console.log(chalk.bgCyan.black.bold('   🚀  init-antigravity-workflow  v1.3.3            '));
     console.log(chalk.bgCyan.black.bold('   Universal AI Workflow Bootstrapper                '));
     console.log(chalk.bgCyan.black.bold('   Centralized Knowledge · Decentralized Execution   '));
     console.log(chalk.bgCyan.black.bold('                                                   '));
@@ -394,6 +394,12 @@ export async function run() {
         console.log('');
         console.log(chalk.dim('  Then upload this file to NotebookLM with the prefix:'));
         console.log(chalk.cyan.bold(`  [Global-Convention] Master_Architecture.md`));
+        console.log('');
+        console.log(chalk.yellow.bold('  💡 IMPORTANT NOTE FOR MASTER ARCHITECT:'));
+        console.log(chalk.white('  Beyond generating the Architecture Map, you should also create'));
+        console.log(chalk.white('  supplementary convention files (e.g., Clean Architecture Rules,'));
+        console.log(chalk.white('  UI Style Guides) and upload them to NotebookLM as ' + chalk.cyan('[Global-Convention]')));
+        console.log(chalk.white('  to establish the complete Knowledge Pool for all teams.'));
     }
     console.log('');
 }
