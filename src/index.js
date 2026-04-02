@@ -13,7 +13,7 @@
 
 import { select, input, confirm } from '@inquirer/prompts';
 import chalk from 'chalk';
-import { writeFileSync, mkdirSync, existsSync, chmodSync } from 'node:fs';
+import { writeFileSync, mkdirSync, existsSync, readdirSync, unlinkSync, chmodSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 
 import { getAiIgnore } from './templates/aiignore.js';
@@ -51,14 +51,19 @@ const AGENT_TARGETS = [
 
 /** Safe write: creates parent dirs if needed, skips if file exists and not forced */
 function safeWrite(filePath, content, overwrite = false) {
-    if (existsSync(filePath) && !overwrite) {
+    const exists = existsSync(filePath);
+    if (exists && !overwrite) {
         console.log(chalk.yellow(`  ⚠  Skipped (exists): ${filePath}`));
         return false;
     }
     const dir = resolve(filePath, '..');
     mkdirSync(dir, { recursive: true });
     writeFileSync(filePath, content, 'utf-8');
-    console.log(chalk.green(`  ✓  Created: ${filePath}`));
+    if (exists) {
+        console.log(chalk.blue(`  ↻  Updated: ${filePath}`));
+    } else {
+        console.log(chalk.green(`  ✓  Created: ${filePath}`));
+    }
     return true;
 }
 
@@ -260,6 +265,31 @@ export async function run() {
         console.log(chalk.green(`  ✓  Created: ${ANTIGRAVITY_DIR}/`));
     } else {
         console.log(chalk.yellow(`  ⚠  Exists:  ${ANTIGRAVITY_DIR}/`));
+
+        // Detect stale files from previous init with different PREFIX
+        const existingFiles = readdirSync(antigravDir);
+        const staleWorkflows = existingFiles.filter(f =>
+            f.match(/^00_[A-Z0-9_-]+_Agent_Workflow\.md$/) && f !== `00_${prefix}_Agent_Workflow.md`
+        );
+
+        if (staleWorkflows.length > 0) {
+            console.log('');
+            console.log(chalk.yellow('  ⚠  Found files from a previous init with a different PREFIX:'));
+            staleWorkflows.forEach(f => console.log(chalk.dim(`     • ${ANTIGRAVITY_DIR}/${f}`)));
+            console.log('');
+
+            const cleanup = await confirm({
+                message: 'Remove these stale files to avoid duplicates?',
+                default: true,
+            });
+
+            if (cleanup) {
+                staleWorkflows.forEach(f => {
+                    unlinkSync(join(antigravDir, f));
+                    console.log(chalk.red(`  ✗  Removed: ${ANTIGRAVITY_DIR}/${f}`));
+                });
+            }
+        }
     }
 
     // 2e. Constitution file: 00_[PREFIX]_Agent_Workflow.md
