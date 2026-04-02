@@ -22,6 +22,7 @@ import { getWorkflowTemplate } from './templates/workflow.js';
 import { getRoutingTemplate } from './templates/routing.js';
 import { detectDependencies } from './utils/detect-deps.js';
 import { detectFramework } from './utils/detect-framework.js';
+import { checkMcpConfig } from './utils/check-mcp.js';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 const ANTIGRAVITY_DIR = '.antigravity';
@@ -271,8 +272,44 @@ export async function run() {
     const routingPath = join(antigravDir, routingFilename);
     safeWrite(routingPath, getRoutingTemplate(prefix, setupMode, moduleName, moduleDeps), overwrite);
 
-    // ── Step 3: Success Banner ──
-    header('Step 3 — Done! 🎉');
+    // ── Step 3: MCP Health Check ──
+    header('Step 3 — MCP Health Check');
+
+    const mcpStatus = checkMcpConfig(cwd, agentTarget);
+
+    if (mcpStatus.found.length > 0) {
+        mcpStatus.found.forEach(s => {
+            console.log(chalk.green(`  ✅ ${s}`));
+        });
+    }
+
+    if (mcpStatus.missing.length > 0) {
+        mcpStatus.missing.forEach(s => {
+            console.log(chalk.yellow(`  ⚠️  ${s} — not found in MCP config`));
+        });
+        console.log('');
+        console.log(chalk.dim('  The workflow requires these MCP servers to function fully.'));
+        console.log(chalk.dim('  Add them to your MCP config:'));
+
+        if (agentTarget === 'cursor' || agentTarget === 'both') {
+            console.log(chalk.dim('    Cursor:      .cursor/mcp.json'));
+        }
+        if (agentTarget === 'antigravity' || agentTarget === 'both') {
+            console.log(chalk.dim('    Antigravity:  .gemini/settings.json'));
+        }
+        console.log('');
+    } else {
+        console.log(chalk.green.bold('\n  All MCP servers configured! 🎉'));
+    }
+
+    if (mcpStatus.configPaths.length === 0) {
+        console.log(chalk.yellow('  ⚠️  No MCP config files found at all.'));
+        console.log(chalk.dim('  Make sure to configure MCP servers before using the workflow.'));
+        console.log('');
+    }
+
+    // ── Step 4: Success Banner ──
+    header('Step 4 — Done! 🎉');
 
     console.log('');
     console.log(chalk.green.bold('  ✅ Antigravity Workflow initialized successfully!'));
