@@ -2,8 +2,13 @@
  * init-antigravity-workflow — Main CLI Logic
  *
  * Interactive wizard that scaffolds the 4-Round AI Workflow for any project.
+ * Supports two setup modes:
+ * - Global: Master Architect workspace (full knowledge access)
+ * - Module: Module Owner workspace (scoped to Global + own module)
+ *
  * Generates: .aiignore, .agentrules/.cursorrules, .antigravity/ directory,
- * and the Constitution file (00_[PREFIX]_Agent_Workflow.md).
+ * the Constitution file (00_[PREFIX]_Agent_Workflow.md),
+ * and the Context Router (00_Core_Routing.md).
  */
 
 import { select, input, confirm } from '@inquirer/prompts';
@@ -14,6 +19,7 @@ import { resolve, join } from 'node:path';
 import { getAiIgnore } from './templates/aiignore.js';
 import { getAgentRules, getAgentRulesFilename } from './templates/agentrules.js';
 import { getWorkflowTemplate } from './templates/workflow.js';
+import { getRoutingTemplate } from './templates/routing.js';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 const ANTIGRAVITY_DIR = '.antigravity';
@@ -25,6 +31,11 @@ const FRAMEWORKS = [
     { name: 'Node.js / Express', value: 'nodejs' },
     { name: 'Python / Django', value: 'python' },
     { name: 'Other', value: 'other' },
+];
+
+const SETUP_MODES = [
+    { name: 'Global (Master Architect) — Full knowledge access, defines system-wide rules', value: 'global' },
+    { name: 'Module (Module Owner) — Scoped to your module + Global conventions', value: 'module' },
 ];
 
 const AGENT_TARGETS = [
@@ -62,8 +73,9 @@ export async function run() {
     // ── Banner ──
     console.log('');
     console.log(chalk.bgCyan.black.bold('                                                   '));
-    console.log(chalk.bgCyan.black.bold('   🚀  init-antigravity-workflow  v1.0.0            '));
+    console.log(chalk.bgCyan.black.bold('   🚀  init-antigravity-workflow  v1.1.0            '));
     console.log(chalk.bgCyan.black.bold('   Universal AI Workflow Bootstrapper                '));
+    console.log(chalk.bgCyan.black.bold('   Centralized Knowledge · Decentralized Execution   '));
     console.log(chalk.bgCyan.black.bold('                                                   '));
     console.log('');
     console.log(chalk.dim(`  Working directory: ${cwd}`));
@@ -72,13 +84,39 @@ export async function run() {
     // ── Step 1: Interactive Prompts ──
     header('Step 1 — Project Configuration');
 
+    // 1a. Setup Mode
+    const setupMode = await select({
+        message: 'Select setup mode:',
+        choices: SETUP_MODES,
+    });
+
+    const isModule = setupMode === 'module';
+
+    // 1b. Module Name (only for module mode)
+    let moduleName = '';
+    if (isModule) {
+        const rawModule = await input({
+            message: 'Enter your MODULE name (e.g. Payment, Auth, Booking):',
+            validate: (val) => {
+                if (!val || val.trim().length === 0) return 'Module name is required.';
+                if (!/^[A-Za-z][A-Za-z0-9_-]*$/.test(val.trim())) return 'Module name must start with a letter (letters, numbers, hyphens, underscores).';
+                return true;
+            },
+        });
+        // Capitalize first letter, keep the rest as-is
+        const trimmed = rawModule.trim();
+        moduleName = trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+    }
+
+    // 1c. Framework
     const framework = await select({
         message: 'Select your project framework:',
         choices: FRAMEWORKS,
     });
 
+    // 1d. Project PREFIX
     const rawPrefix = await input({
-        message: 'Enter your project PREFIX (e.g. LC247, BTRACK):',
+        message: 'Enter your project PREFIX (e.g. LC247, MYAPP):',
         validate: (val) => {
             if (!val || val.trim().length === 0) return 'PREFIX is required.';
             if (!/^[A-Za-z0-9_-]+$/.test(val.trim())) return 'PREFIX must be alphanumeric (letters, numbers, hyphens, underscores).';
@@ -87,17 +125,20 @@ export async function run() {
     });
     const prefix = rawPrefix.trim().toUpperCase();
 
+    // 1e. Jira Key
     const jiraKey = await input({
         message: `Enter Jira project key (default: ${prefix}):`,
         default: prefix,
         transformer: (val) => val.toUpperCase(),
     });
 
+    // 1f. Agent Target
     const agentTarget = await select({
         message: 'Select your AI agent:',
         choices: AGENT_TARGETS,
     });
 
+    // 1g. Overwrite
     const overwrite = await confirm({
         message: 'Overwrite existing files if they exist?',
         default: false,
@@ -107,6 +148,10 @@ export async function run() {
     console.log('');
     console.log(chalk.dim('─'.repeat(55)));
     console.log(chalk.white.bold('  Configuration Summary:'));
+    console.log(`    Setup Mode   : ${chalk.cyan(isModule ? `Module [${moduleName}]` : 'Global (Master Architect)')}`);
+    if (isModule) {
+        console.log(`    Module Name  : ${chalk.cyan(moduleName)}`);
+    }
     console.log(`    Framework    : ${chalk.cyan(framework)}`);
     console.log(`    PREFIX       : ${chalk.cyan(prefix)}`);
     console.log(`    Jira Key     : ${chalk.cyan(jiraKey.toUpperCase())}`);
@@ -134,12 +179,12 @@ export async function run() {
     // 2b. .agentrules / .cursorrules
     const rulesFilename = getAgentRulesFilename(agentTarget);
     const rulesPath = join(cwd, rulesFilename);
-    safeWrite(rulesPath, getAgentRules(prefix, agentTarget), overwrite);
+    safeWrite(rulesPath, getAgentRules(prefix, agentTarget, setupMode, moduleName), overwrite);
 
     // 2c. If target is "both", also generate .cursorrules
     if (agentTarget === 'both') {
         const cursorPath = join(cwd, '.cursorrules');
-        safeWrite(cursorPath, getAgentRules(prefix, 'cursor'), overwrite);
+        safeWrite(cursorPath, getAgentRules(prefix, 'cursor', setupMode, moduleName), overwrite);
     }
 
     // 2d. .antigravity/ directory
@@ -154,16 +199,19 @@ export async function run() {
     // 2e. Constitution file: 00_[PREFIX]_Agent_Workflow.md
     const workflowFilename = `00_${prefix}_Agent_Workflow.md`;
     const workflowPath = join(antigravDir, workflowFilename);
-    safeWrite(workflowPath, getWorkflowTemplate(prefix, jiraKey.toUpperCase()), overwrite);
+    safeWrite(workflowPath, getWorkflowTemplate(prefix, jiraKey.toUpperCase(), setupMode, moduleName), overwrite);
 
-    // ── Step 3: Make bin executable ──
-    // (Only relevant when developing the tool locally)
+    // 2f. Context Router: 00_Core_Routing.md
+    const routingFilename = '00_Core_Routing.md';
+    const routingPath = join(antigravDir, routingFilename);
+    safeWrite(routingPath, getRoutingTemplate(prefix, setupMode, moduleName), overwrite);
 
-    // ── Step 4: Success Banner ──
+    // ── Step 3: Success Banner ──
     header('Step 3 — Done! 🎉');
 
     console.log('');
     console.log(chalk.green.bold('  ✅ Antigravity Workflow initialized successfully!'));
+    console.log(chalk.dim(`     Mode: ${isModule ? `Module [${moduleName}]` : 'Global (Master Architect)'}`));
     console.log('');
     console.log(chalk.white('  Generated files:'));
     console.log(chalk.dim(`    • .aiignore                      (${framework} patterns)`));
@@ -172,6 +220,7 @@ export async function run() {
         console.log(chalk.dim('    • .cursorrules                   (agent pre-flight rules)'));
     }
     console.log(chalk.dim(`    • ${ANTIGRAVITY_DIR}/${workflowFilename}`));
+    console.log(chalk.dim(`    • ${ANTIGRAVITY_DIR}/${routingFilename}   (context router)`));
     console.log('');
 
     // ── Architecture Mapping Prompt ──
@@ -179,19 +228,40 @@ export async function run() {
     console.log(chalk.yellow.bold('  📋 NEXT STEP — Architecture Mapping'));
     console.log(chalk.dim('═'.repeat(55)));
     console.log('');
-    console.log(chalk.white('  Copy the prompt below and paste it into your AI agent'));
-    console.log(chalk.white('  chat to auto-generate an Architecture Map:'));
-    console.log('');
-    console.log(chalk.dim('  ┌─────────────────────────────────────────────────────'));
-    console.log(chalk.cyan(`  │  Scan the entire codebase of this project.`));
-    console.log(chalk.cyan(`  │  Identify: folder structure, entry points, key modules,`));
-    console.log(chalk.cyan(`  │  state management patterns, API layers, and routing.`));
-    console.log(chalk.cyan(`  │  Output a comprehensive Architecture Map as Markdown`));
-    console.log(chalk.cyan(`  │  and save it to:`));
-    console.log(chalk.cyan.bold(`  │  .antigravity/${prefix}_Architecture_Map.md`));
-    console.log(chalk.dim('  └─────────────────────────────────────────────────────'));
-    console.log('');
-    console.log(chalk.dim('  The agent will analyze your codebase and generate a'));
-    console.log(chalk.dim(`  detailed map at ${ANTIGRAVITY_DIR}/${prefix}_Architecture_Map.md`));
+
+    if (isModule) {
+        // Module mode: generate module-scoped architecture map
+        console.log(chalk.white('  Copy the prompt below and paste it into your AI agent'));
+        console.log(chalk.white('  chat to auto-generate a Module Architecture Map:'));
+        console.log('');
+        console.log(chalk.dim('  ┌─────────────────────────────────────────────────────'));
+        console.log(chalk.cyan(`  │  Scan the entire codebase of this project.`));
+        console.log(chalk.cyan(`  │  This is the [Module-${moduleName}] sub-package.`));
+        console.log(chalk.cyan(`  │  Identify: folder structure, entry points, key modules,`));
+        console.log(chalk.cyan(`  │  state management patterns, API layers, and routing.`));
+        console.log(chalk.cyan(`  │  Output a Module Architecture Map as Markdown`));
+        console.log(chalk.cyan(`  │  and save it to:`));
+        console.log(chalk.cyan.bold(`  │  .antigravity/${moduleName}_Architecture_Map.md`));
+        console.log(chalk.dim('  └─────────────────────────────────────────────────────'));
+        console.log('');
+        console.log(chalk.dim('  Then upload this file to NotebookLM with the prefix:'));
+        console.log(chalk.cyan.bold(`  [Module-${moduleName}] Architecture_Map.md`));
+    } else {
+        // Global mode: generate master architecture
+        console.log(chalk.white('  Copy the prompt below and paste it into your AI agent'));
+        console.log(chalk.white('  chat to auto-generate a Master Architecture Map:'));
+        console.log('');
+        console.log(chalk.dim('  ┌─────────────────────────────────────────────────────'));
+        console.log(chalk.cyan(`  │  Scan the entire codebase of this project.`));
+        console.log(chalk.cyan(`  │  Identify: folder structure, entry points, key modules,`));
+        console.log(chalk.cyan(`  │  state management patterns, API layers, and routing.`));
+        console.log(chalk.cyan(`  │  Output a comprehensive Master Architecture Map`));
+        console.log(chalk.cyan(`  │  as Markdown and save it to:`));
+        console.log(chalk.cyan.bold(`  │  .antigravity/${prefix}_Master_Architecture.md`));
+        console.log(chalk.dim('  └─────────────────────────────────────────────────────'));
+        console.log('');
+        console.log(chalk.dim('  Then upload this file to NotebookLM with the prefix:'));
+        console.log(chalk.cyan.bold(`  [Global-Convention] Master_Architecture.md`));
+    }
     console.log('');
 }
