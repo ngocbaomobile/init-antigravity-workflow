@@ -16,7 +16,7 @@ The CLI will guide you through the setup. Just answer the prompts.
 
 ## Architecture Overview
 
-![Workflow Overview](docs/workflow-overview.png)
+![Workflow Overview](https://raw.githubusercontent.com/ngocbaomobile/init-antigravity-workflow/main/docs/workflow-overview.png)
 
 ---
 
