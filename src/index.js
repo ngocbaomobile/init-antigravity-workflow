@@ -81,7 +81,7 @@ export async function run() {
     // ── Banner ──
     console.log('');
     console.log(chalk.bgCyan.black.bold('                                                   '));
-    console.log(chalk.bgCyan.black.bold('   🚀  init-antigravity-workflow  v1.3.3            '));
+    console.log(chalk.bgCyan.black.bold('   🚀  init-antigravity-workflow  v1.4.0            '));
     console.log(chalk.bgCyan.black.bold('   Universal AI Workflow Bootstrapper                '));
     console.log(chalk.bgCyan.black.bold('   Centralized Knowledge · Decentralized Execution   '));
     console.log(chalk.bgCyan.black.bold('                                                   '));
